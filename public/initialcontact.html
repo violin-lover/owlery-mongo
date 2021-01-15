@@ -1,0 +1,38 @@
+<html>
+    <head>
+        <title>Owlery Sign Up</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body style="background-color: BurlyWood;">
+        <center><h1>Welcome to Owlery</h1></center>
+        <center><p>Please provide the information below to sign up for owl service!</p></center>
+        <br />
+        <center><p>Enter your email:</p></center>
+        <center><textarea id="email" rows="4" cols="50"></textarea></center>
+        <br />
+        <br />
+        <center><button type="button" id="owl" onclick="signUp()">Get Hooting!</button></center>
+        <br />
+        <br />
+        <center><div id="signupcomplete"></div></center>
+    </body>
+
+    <script>
+        function signUp() {
+            debugger;
+            let email = document.getElementById("email").value;
+            let result = document.getElementById("signupcomplete");
+            if (email.indexOf("@") > 1 && email.lastIndexOf(".") > email.indexOf("@")) {
+                let shush = "/verify/" + email;
+                fetch(shush)
+                    .then((response) => response.json())
+
+                    .then((res) => {
+                        result.innerHTML = "An email was sent to " + res.success + ". Please verify your email to recieve your owl as soon as possible!";
+                    });
+            } else {
+                result.innerHTML = "Please input a valid email address to continue.";
+            }
+        }
+    </script>
+</html>

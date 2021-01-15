@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+    <head>
+      <link rel = "stylesheet" href= "style.css">
+    </head>
+<body>
+        <h1>Hoot hoot! Your owl will be ariving soon!</h1>
+        <p>The new owl service awaits you! Hoot hoot!™</p>
+        <br>
+        <br>
+        <p>
+        First name:
+		    <br>
+        <input type="text" name="First Name" onchange="checkFirstName(this)" />
+        <br> 
+        <br>
+        Last name:
+        <br>
+        <input type="text" name="Last Name" onchange="checkLastName(this)" />
+        <br>
+        <br>
+        Birthday (mm/dd/yy):
+        <br />
+        <input type="date" id="birthday"/>
+        Username:
+        <br>
+        <input type="text" id = "user" />
+        <br>
+        <br />
+        Password:
+        <br />
+          <input type="password" id="Password" onchange="checkPassword(this)" />
+        <script>
+           function checkFirstName(firstnameInput) {
+
+            if (firstnameInput.value.length < 2) {
+                firstnameInput.focus();
+                alert("Your name is too short: " + firstnameInput.value);
+            } else {
+                firstnameInput.value = toProperCase(firstnameInput.value);
+            }
+            localStorage.setItem("firstname", firstnameInput.value)
+        }
+
+        function checkLastName(lastnameInput) {
+
+            if (lastnameInput.value.length < 2) {
+                lastnameInput.focus();
+                alert("Your name is too short:" + lastnameInput.value);
+            } else {
+                lastnameInput.value = toProperCase(lastnameInput.value);
+            }
+            localStorage.setItem("lastname", lastnameInput.value)
+        }
+
+        function toProperCase(username) {
+            return username.slice(0, 1).toUpperCase() + username.slice(1).toLowerCase()
+        };
+        
+        function checkPassword(passwordInput) {
+            if (passwordInput.value.length < 8) {
+                alert("Your password needs to be at least 8 digits long.")
+            }
+            if (passwordInput.value === passwordInput.value.toLowerCase() || passwordInput.value === passwordInput.value.toUpperCase()) {
+                alert("Your password needs to have mixed cases.");
+            }
+            let hasNumber = false
+            debugger;
+            for (let h = 0; h < passwordInput.value.length; h++) {
+                if (0 * passwordInput.value[h] === 0) {
+                    hasNumber = true;
+                    break;
+                }
+            }
+            if (!hasNumber) {
+                alert("Your password needs to have a number!")
+            }
+        }
+
+
+        function gather(){
+          let user = document.getElementById("user").value;
+          let pass = document.getElementById("Password").value;
+          let search = window.location.search;
+          let params = new URLSearchParams(search);
+          let yay = params.get("e");
+          let info = {
+            email:yay,
+            username:user,
+            password:pass
+          }
+          fetch('/api/sign-up', {
+            method: 'post',
+            headers: {
+            'Accept': 'application/json, text/plain, */*',
+            'Content-Type': 'application/json'
+             },
+           body: JSON.stringify(info)
+          }).then(res=>res.json()).then(res => console.log(res));
+        }
+
+        </script>
+         <br>
+         <br>
+        <button type = "button" onclick = "gather()"> Get Hooting! </button>
+    </body>
+</html>

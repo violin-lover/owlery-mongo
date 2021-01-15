@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <center>
+        <body>
+            <h1>Owlery™</h1>
+            <h3>Welcome Back!</h3>
+
+            <br />
+            <br />
+
+            Username:
+            <input type="text" id="username" />
+
+            <br />
+            <br />
+
+            Password:
+            <input type="password" id="password" />
+
+            <br />
+            <br />
+
+            <button type="button" onclick="getInfo()">Log In</button>
+        </body>
+
+        <script>
+            function getInfo() {
+                debugger;
+                let username = document.getElementById("username").value;
+                let password = document.getElementById("password").value;
+                console.log(password);
+                let info = {
+                    username: username,
+                    password: password,
+                };
+                console.log(info);
+                fetch("/api/login", {
+                    method: "post",
+                    headers: {
+                        Accept: "application/json, text/plain, */*",
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(info),
+                })
+                    .then((res) => res.json())
+                    .then((res) => {
+                        console.log("From fetch: " + res);
+                        let token = res.token;
+                        localStorage.setItem("token", token);
+                        window.open("https://im-not-an-owl.snowkitty.repl.co/home.html", "_parent");
+                    });
+            }
+        </script>
+    </center>
+</html>
