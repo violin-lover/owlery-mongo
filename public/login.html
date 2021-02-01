@@ -28,15 +28,12 @@
 
         <script>
             function getInfo() {
-                debugger;
-                let username = document.getElementById("username").value;
-                let password = document.getElementById("password").value;
-                console.log(password);
+                let user = document.getElementById("username").value;
+                let pass = document.getElementById("password").value;
                 let info = {
-                    username: username,
-                    password: password,
+                    username: user,
+                    password: pass,
                 };
-                console.log(info);
                 fetch("/api/login", {
                     method: "post",
                     headers: {
@@ -47,10 +44,11 @@
                 })
                     .then((res) => res.json())
                     .then((res) => {
-                        console.log("From fetch: " + res);
+                        console.log(res.token);
                         let token = res.token;
+                        console.log(token + "tokkkkkkkkeeeeeennnnnnnnnnn")
                         localStorage.setItem("token", token);
-                        window.open("https://im-not-an-owl.snowkitty.repl.co/home.html", "_parent");
+                        window.open("https://owlerymongo.snowkitty.repl.co/home.html", "_parent");
                     });
             }
         </script>

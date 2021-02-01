@@ -1,188 +1,216 @@
 const express = require("express");
-const server = express();
 
 const body_parser = require("body-parser");
 
-// parse JSON (application/json content-type)
-server.use(body_parser.json());
-
 const router = express.Router();
+//const router = express();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+const mongo = require("../lib/db.js");
+const dbName = "msgsdb";
+const userCollection = "users";
+const msgCollection = "msgs";
+ObjectId = require('mongodb').ObjectID;
+
+
+
 const userMiddleware = require("../middleware/users.js");
 
-router.get("/secret-route", userMiddleware.isLoggedIn, (req, res, next) => {
-  //console.log(req.userData);
-  res.send("Welcome!" + req.userData.username + "This is the secret content. Only logged in users can see that!");
-});
-
-router.get("/read-message", userMiddleware.isLoggedIn, (req, res, next) => {
-  //console.log(req.userData);
-  //Select * from Messages WHERE authorid in (SELECT followedId from User_follows WHERE followerId) =
-  db.query(`Select * from Messages WHERE authorid in (SELECT followedId from User_follows WHERE followerId = '${req.userData.userId}')`, (err, result) => {
-    if (err) {
-      throw err;
-    }
-    res.json(result);
-  })
-});
-
-router.get("/read-yourmessage", userMiddleware.isLoggedIn, (req, res, next) => {
-  //console.log(req.userData);
-  db.query(`Select * from Messages WHERE authorid = '${req.userData.userId}'`, (err, result) => {
-    if (err) {
-      throw err;
-    }
-    res.json(result);
-  })
-});
-
-
-
-router.post("/post-message", userMiddleware.isLoggedIn, (req, res, next) => {
-  //console.log(req.userData.username);
-  db.query(`INSERT INTO Messages (author, authorid, message, posted_at) VALUES ('${req.userData.username}', '${req.userData.userId}', ${db.escape(req.body.message)}, now())`, (err, result) => {
-    if (err) {
-      throw err;
-      return res.status(400).send({
-        msg: err,
-      });
-    }
-    return res.status(201).send({
-      msg: "Sent!",
-    });
+mongo.initialize(dbName, msgCollection, function(msgColl) {
+  msgColl.find().toArray(function(err, result) {
+    if (err) throw err;
+    console.log(result)
   });
-});
-
-router.post("/like-message", userMiddleware.isLoggedIn, (req, res, next) => {
-  console.log("yaaaaaaaaaaaaaaaaay" + req.userData.userId);
-  console.log("WORRRRRRRRRRRRRRRRK" + req.body.id);
-  db.query(`SELECT * FROM user_likes WHERE userid = '${req.userData.userId}' and messageid = ${req.body.id}`,
-    (err, result) => {
-      console.log("select query completed");
-      if (err) {
-        console.log("error" + err);
-        throw err;
-      }
-      if (result.length == 0) {
-        console.log("there is nothing");
-        db.query(
-          `UPDATE Messages 
-            SET post_likes = post_likes + 1
-            WHERE id = ${req.body.id}`
-        );
-        db.query(
-          `INSERT INTO user_likes(userid, messageid, liked_time) VALUES ('${req.userData.userId}',${req.body.id},now())`
-        )
-      } else {
-        console.log("already liked!!");
-      }
-    });
-});
-
-router.post("/follow-user", userMiddleware.isLoggedIn, (req, res, next) => {
-  //console.log(req.body.followerId);
-  console.log("this is the person you're following" + req.body.followedId);
-  console.log(req.userData.userId);
-  if (req.body.followedId == req.userData.userId) {
-    console.log("You cannot follow yourself.")
-  } else {
-       db.query(`INSERT INTO User_follows(followerId, followedId) VALUES ('${req.userData.userId}', '${req.body.followedId}')`, (err, result) => {
-        if (err) {
-            return res.status(400).send({
-                msg: err
-            });
-        }
-        console.log(result);
-        return res.status(201).send({
-            msg: "Following!"
-        });
-    });
-  }
-});
-
-
-router.post("/sign-up", userMiddleware.validateRegister, (req, res, next) => {
-  db.query(`SELECT * FROM Users WHERE LOWER(username) = LOWER(${db.escape(req.body.username)});`, (err, result) => {
-    if (result.length) {
-      return res.status(409).send({
-        msg: "This username is already in use!",
-      });
-    } else {
-      // username is available
-      bcrypt.hash(req.body.password, 10, (err, hash) => {
-        if (err) {
-          return res.status(500).send({
-            msg: err,
-          });
+  router.get("/read-message", userMiddleware.isLoggedIn, (req, res, next) => {
+    msgColl.find().toArray((error, messages) => { // callback of find
+      if (error) throw error;
+      for(message of messages){
+        if (message.likersId == undefined || !message.likersId.includes(req.userData.userId)){
+          message.liked = false;
         } else {
-          // has hashed pw => add to database
-          db.query(`INSERT INTO Users (id, username, password, registered) VALUES ('${req.body.email}', ${db.escape(req.body.username)}, ${db.escape(hash)}, now())`, (err, result) => {
-            if (err) {
-              throw err;
-              return res.status(400).send({
-                msg: err,
-              });
-            }
-            return res.status(201).send({
-              msg: "Registered!",
-            });
-          });
+          message.liked = true;
         }
-      });
-    }
+      }
+      res.json(messages);
+    });
   });
+})
+
+
+
+mongo.initialize(dbName, msgCollection, function(msgColl) {
+  msgColl.find().toArray(function(err, result) {
+    if (err) throw err;
+    console.log(result)
+  });
+  router.post("/post-message", userMiddleware.isLoggedIn, (req, res, next) => {
+    console.log("about to post message");
+    let item = {
+      author: req.userData.username,
+      message: req.body.message,
+      posted_at: req.body.posted_at
+    }
+    console.log(item.posted_at)
+    msgColl.insertOne(item, (error, result) => {
+      if (error) {
+        throw error;
+        return res.status(400).send({
+          msg: error,
+        });
+      }
+      return res.status(201).send({
+        msg: "Message Sent!",
+      });
+    })
+  });
+})
+
+mongo.initialize(dbName, msgCollection, function(msgColl) {
+  msgColl.find().toArray(function(err, result) {
+    if (err) throw err;
+    console.log(result)
+  })
+  router.post("/like-message", userMiddleware.isLoggedIn, (req, res, next) => {
+    console.log(req.body.liked)
+      if(req.body.liked == false){
+          msgColl.update(
+            { _id: ObjectId(req.body.id) },
+            { $inc: { likes: 1 }, $push: { likersId: req.userData.userId} },
+            { upsert: true },
+            function(err, result) {
+              if (err) throw err;
+              console.log(result);
+            })
+      } else {
+          res.status(202).send({
+            msg: "liked"
+          })
+      }
+        })
+  })
+
+
+mongo.initialize(dbName, userCollection, function(userColl) {
+router.post("/follow-user", userMiddleware.isLoggedIn, (req, res, next) => {
+    userColl.update(
+            {email: req.userData.userId},
+            {$inc: {followers: 1}, $push: {following: req.body.followedId}},
+            {upsert: false},
+            function(err, result) {
+              if (err) throw err;
+              console.log(result);
+            })
+            return res.status(201).send({
+            msg: "Is now following"
+        });
+});
+})
+
+mongo.initialize(dbName, userCollection, function(userColl) { // successCallback
+  // get all items
+  userColl.find().toArray(function(err, result) {
+    if (err) throw err;
+    console.log(result);
+  });
+
+  router.post("/sign-up", userMiddleware.validateRegister, (req, res, next) => {
+    console.log("Proceed to find username");
+    userColl.find({ $or: [{ email: req.body.email }, { username: req.body.username }] }).toArray((error, result) => {
+      console.log(result)
+      if (result.length > 0) {
+        console.log("username or email is in use!")
+        return res.status(409).send({
+          msg: "This username or email is already in use!",
+        });
+      } else {
+        console.log("username is avaliable")
+        bcrypt.hash(req.body.password, 10, (err, hash) => {
+          if (err) {
+            return res.status(500).send({
+              msg: err,
+            });
+          } else {
+            let newPass = {
+              email: req.body.email,
+              username: req.body.username,
+              password: hash
+            }
+            console.log("Proceed to insert" + newPass);
+            userColl.insertOne(newPass, (error, result) => {
+              if (error) {
+                throw error;
+                return res.status(400).send({
+                  msg: error,
+                });
+              }
+              return res.status(201).send({
+                msg: "Registered",
+              });
+            });
+          }
+        });
+      }
+    });
+  })
 });
 
-router.post("/login", (req, res, next) => {
-  console.log("entering/logging in with " + req.body.username);
-  console.log(req.body);
-  db.query(`SELECT * FROM Users WHERE username = ${db.escape(req.body.username)};`, (err, result) => {
-    // user does not exists
-    if (err) {
-      throw err;
-      return res.status(400).send({
-        msg: err,
-      });
-    }
-    if (!result.length) {
-      return res.status(401).send({
-        msg: "You don't exist",
-      });
-    }
-    // check password
-    bcrypt.compare(req.body.password, result[0]["password"], (bErr, bResult) => {
-      // wrong password
-      if (bErr) {
-        throw bErr;
+mongo.initialize(dbName, userCollection, function(userColl) { // successCallback
+  // get all items
+  userColl.find().toArray(function(err, result) {
+    if (err) throw err;
+    console.log(result);
+  });
+
+  router.post("/login", (req, res, next) => {
+    console.log("entering/logging in with " + req.body.username);
+    console.log(req.body);
+    userColl.find({ username: req.body.username }).toArray((err, result) => {
+      // user does not exists
+      if (err) {
+        throw err;
+        return res.status(400).send({
+          msg: err,
+        });
+      }
+      if (!result.length) {
         return res.status(401).send({
-          msg: "Password is incorrect!",
+          msg: "You don't exist",
         });
       }
-      if (bResult) {
-        const token = jwt.sign(
-          {
-            username: result[0].username,
-            userId: result[0].id,
-          },
-          "SECRETKEY",
-          {
-            expiresIn: "7d",
-          }
-        );
-        db.query(`UPDATE Users SET last_login = now() WHERE id = '${result[0].id}'`);
-        return res.status(200).send({
-          msg: "Logged in!",
-          token,
-          user: result[0],
+      // check password
+      bcrypt.compare(req.body.password, result[0]["password"], (bErr, bResult) => {
+        // wrong password
+        //console.log("result 0" + result[0])
+        if (bErr) {
+          throw bErr;
+          return res.status(401).send({
+            msg: "Password is incorrect!",
+          });
+        }
+        if (bResult) {
+          const token = jwt.sign(
+            {
+              username: result[0].username,
+              userId: result[0].email,
+            },
+            "SECRETKEY",
+            {
+              expiresIn: "7d",
+            }
+          );
+          //userColl.updateOne({})
+          return res.status(200).send({
+            msg: "Logged in!",
+            token,
+            user: result[0],
+          });
+        }
+        return res.status(401).send({
+          msg: "Username or password is incorrect!",
         });
-      }
-      return res.status(401).send({
-        msg: "Username or password is incorrect!",
       });
     });
   });
-});
-
+})
 module.exports = router;

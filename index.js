@@ -11,7 +11,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(express.static('public'));
 //sends the user a link through email  that directs the user to the sign up form.
-app.get("/verifyemail/:email", (req, res) => {
+app.get("/verify/:email", (req, res) => {
   //receive email, form a link, send email with the link
   let email = req.params.email;
   console.log(email);

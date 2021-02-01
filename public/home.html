@@ -10,16 +10,15 @@
 	<script>
 		function message() {
                 let post = document.getElementById("post").value;
-                let token = localStorage.getItem("token");
-                post = he.encode(post);
-
+                let tok = localStorage.getItem("token");
                 let info = {
                     message: post,
+                    posted_at: (new Date()).getTime()
                 };
                 fetch("/api/post-message", {
                     method: "post",
                     headers: {
-                        Authorization: "bearer " + token,
+                        Authorization: "bearer " + tok,
                         Accept: "application/json, text/plain, */*",
                         "Content-Type": "application/json",
                     },
@@ -31,43 +30,18 @@
                     });
             }
 
-            setInterval(function readMessages() {
-                let feed = document.getElementById("feed");
-                let token = localStorage.getItem("token");
-                fetch("/api/read-message", {
-                    method: "get",
-                    headers: {
-                        Authorization: "bearer " + token,
-                        Accept: "application/json, text/plain, */*",
-                        "Content-Type": "application/json",
-                    },
-                })
-                    .then((res) => res.json())
-                    .then((res) => {
-                        console.log("lengthhhh: " + res.length);
-                        displayFeed(res, feed);
-                    });
-            }, 3000);
-
-            function displayFeed(res, feed) {
-                let tblHtml = `
-    <ol>`;
-                for (const k of res) {
-                    tblHtml += createRow(k);
-                }
-                tblHtml += `</ol>`;
-                feed.innerHTML = tblHtml;
-            }
-
-            function likePost(id) {
-                let token = localStorage.getItem("token");
+            function like(id, likes, email, liked) {
+                let tok = localStorage.getItem("token");
                 let info = {
-                    id: id,
+                    "id": id,
+                    "likes":likes,
+                    "liker":email,
+                    "liked":liked,
                 };
                 fetch("/api/like-message", {
                     method: "post",
                     headers: {
-                        Authorization: "bearer " + token,
+                        Authorization: "bearer " + tok,
                         Accept: "application/json, text/plain, */*",
                         "Content-Type": "application/json",
                     },
@@ -76,20 +50,98 @@
                     .then((res) => res.json())
                     .then((res) => {
                         console.log(res);
-                        console.log("Liked successfully");
+                        console.log("yay");
                     });
             }
 
-                  function follow(authorid){
+            setInterval(readMessages, 3000);
+
+             function readMessages() {
+                let feed = document.getElementById("feed");
+                let tok = localStorage.getItem("token");
+                fetch("/api/read-message", {
+                    method: "get",
+                    headers: {
+                        Authorization: "bearer " + tok,
+                        Accept: "application/json, text/plain, */*",
+                        "Content-Type": "application/json",
+                    },
+                })
+                    .then((res) => res.json())
+                    .then((res) => {
+                        console.log("lengthhhh" + res.length);
+                        console.log(res)
+                        displayFeed(res, feed);
+                    });
+            }
+
+            function displayFeed(res, feed) {
+                let tblHtml = `
+    <center>
+    <div>`;
+                for (const k of res) {
+                    tblHtml += createRow(k);
+                    console.log(k)
+                }
+                tblHtml += `</div></center>`;
+                feed.innerHTML = tblHtml;
+            }
+
+            function createRow(k) {
+              if (k.likes == undefined){
+                k.likes = 0
+              } else {
+                k.likes = k.likes;
+              }
+              console.log(k.likes)
+                let time = new Date(k.posted_at)
+                let date = k.posted_at;
+                console.log(date)
+                let current = new Date();
+                current = current.getTime();
+                let age = current - date;
+                age = age / 60000;
+                if (age <= 60) {
+                    age = Math.floor(age) + " minutes ago";
+                    return `<b>${k.author}</b>:
+                     <span style="border-radius: 12px;width:400px;height:100px;border:1px solid;" onclick="follow('${k.author}')">Follow</span>
+                     <center><br> ${k.message} <br><br>
+                     Posted at:&nbsp${time} <br>Posted:&nbsp${age}<br>
+      <img src="photos/transparentHeart3.png" width = "20px" height = "20px";cursor:"pointer" onclick="like('${k._id}', ${k.likes}, '${k.author}', ${k.liked});">&nbsp &nbsp ${k.likes}<br></center><br><br>`;
+                } else if (age >= 60 && age < 1440) {
+                    age = age / 60;
+                    age = Math.floor(age) + " hours ago";
+                    return `<b>${k.author}</b>:
+                     <span style="border-radius: 12px;width:400px;height:100px;border:1px solid;" onclick="follow('${k.author}')">Follow</span>
+                     <center><br> ${k.message} <br><br>
+                     Posted at:&nbsp${time} <br>Posted:&nbsp${age}<br>
+      <img src="photos/transparentHeart3.png" width = "20px" height = "20px";cursor:"pointer" onclick="like('${k._id}', ${k.likes}, '${k.author}', ${k.liked});">&nbsp &nbsp ${k.likes}<br></center><br><br>`;
+                } else {
+                    age = age / 1440;
+                    age = Math.floor(age) + " days ago";
+                    return `<b>${k.author}</b>:
+                     <span style="border-radius: 12px;width:400px;height:100px;border:1px solid;" onclick="follow('${k.author}')">Follow</span>
+                     <center><br> ${k.message} <br><br>
+                     Posted at:&nbsp${time} <br>Posted:&nbsp${age}<br>
+      <img src="photos/transparentHeart3.png" width = "20px" height = "20px";cursor:"pointer" onclick="like('${k._id}', ${k.likes}, '${k.author}', ${k.liked});">&nbsp &nbsp ${k.likes}<br></center><br><br>`;
+
+      //fix on thursday
+                }
+            }
+
+       
+
+      function follow(authorid){
               let write = document.getElementById("write").innerHTML;              
-              let token = localStorage.getItem("token");
+              let tok = localStorage.getItem("token");
+              console.log("author id" + authorid)
               let info = {
-                   followedId:authorid
+                   followedId:authorid,
                };
                fetch("/api/follow-user", {
                   method: "post",
                    headers: {
-                       Authorization: "bearer " + token,
+                       Authorization: "bearer " + tok,
                        Accept: "application/json, text/plain, */*",
                        "Content-Type": "application/json",
                    },
@@ -100,41 +152,6 @@
                        console.log(res);
                    });
            }
-
-            function createRow(k) {
-                let age = ageOfMessage(k.posted_at);
-
-                if (age <= 60) {
-                    age = Math.floor(age) + " minutes ago";
-
-                    return `<li> <b><span onclick = "follow('${k.author}')">${k.author}</span></b>:<center> ${k.message}<br>Posted:&nbsp;${age}</li><img src="photos/transparentHeart3.svg" width = "20px" height = "20px";cursor:pointer" 
-                    onclick="likePost(${k.id})">&nbsp;&nbsp;${k.post_likes}</center><br><br>`;
-
-                } else if (age >= 60 && age < 1440) {
-                    age = age / 60;
-                    age = Math.floor(age) + " hours ago";
-
-                    return `<li> <b><span onclick = "follow('${k.author}')">${k.author}</span></b>:<center>${k.message} <br> Posted:&nbsp;${age}</li><img src="photos/transparentHeart3.svg" width = "20px" height = "20px";cursor:pointer" 
-                    onclick="likePost(${k.id})">&nbsp;&nbsp;${k.post_likes}</center><br><br>`; 
-
-                } else {
-                    age = age / 1440;
-                    age = Math.floor(age) + " days ago";
-
-                    return `<li> <b><span onclick = "follow('${k.author}')">${k.author}</span></b>:<center> ${k.message} <br>Posted:&nbsp;${age}</li><img src="photos/transparentHeart3.svg" width = "20px" height = "20px";cursor:pointer" 
-                    onclick="likePost(${k.id})">&nbsp;&nbsp;${k.post_likes}</center><br><br>`;
-                }
-            }
-
-            function ageOfMessage(time) {
-                let postedAt = new Date(time);
-                let currentTime = new Date();
-
-                let difference = currentTime.getTime() - postedAt.getTime();
-                let age = (difference / 60000).toFixed(0);
-
-                return age;
-            }
 	</script>
 </head>
 

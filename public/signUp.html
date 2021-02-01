@@ -78,26 +78,28 @@
         }
 
 
-        function gather(){
-          let user = document.getElementById("user").value;
-          let pass = document.getElementById("Password").value;
-          let search = window.location.search;
-          let params = new URLSearchParams(search);
-          let yay = params.get("e");
-          let info = {
-            email:yay,
-            username:user,
-            password:pass
-          }
-          fetch('/api/sign-up', {
-            method: 'post',
-            headers: {
-            'Accept': 'application/json, text/plain, */*',
-            'Content-Type': 'application/json'
-             },
-           body: JSON.stringify(info)
-          }).then(res=>res.json()).then(res => console.log(res));
-        }
+        function gather() {
+                    let user = document.getElementById("user").value;
+                    let pass = document.getElementById("Password").value;
+                    let search = window.location.search;
+                    let params = new URLSearchParams(search);
+                    let yay = params.get("e");
+                    let info = {
+                        email: yay,
+                        username: user,
+                        password: pass,
+                    };
+                    fetch("/api/sign-up", {
+                        method: "post",
+                        headers: {
+                            Accept: "application/json, text/plain, */*",
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(info),
+                    })
+                        .then((res) => res.json())
+                        .then((res) => console.log(res));
+                }
 
         </script>
          <br>
